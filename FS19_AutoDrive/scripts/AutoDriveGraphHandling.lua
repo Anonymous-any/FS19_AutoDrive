@@ -122,6 +122,7 @@ function AutoDrive:removeMapMarker(toDelete)
 end
 
 function AutoDrive:createWayPoint(vehicle, x, y, z, connectPrevious, dual)
+	AutoDrive:MarkChanged();
 	if vehicle.ad.createMapPoints == true then
 		AutoDrive.mapWayPointsCounter = AutoDrive.mapWayPointsCounter + 1;
 		if AutoDrive.mapWayPointsCounter > 1 and connectPrevious then
@@ -178,13 +179,13 @@ function AutoDrive:handleRecording(vehicle)
 			vehicle.ad.wayPoints[i] = AutoDrive:createWayPoint(vehicle, x1, y1, z1, false, vehicle.ad.creationModeDual)		
 		end;
 		
-		if AutoDrive.autoConnectStart then 
+		if AutoDrive:getSetting("autoConnectStart") then 
 			if startPoint ~= nil then
 				local startNode = AutoDrive.mapWayPoints[startPoint];
 				if startNode ~= nil then
 					if AutoDrive:getDistanceBetweenNodes(startPoint, AutoDrive.mapWayPointsCounter) < 20 then
 						startNode.out[ADTableLength(startNode.out)+1] = vehicle.ad.wayPoints[i].id;
-						vehicle.ad.wayPoints[i].incoming[ADTableLength(vehicle.ad.wayPoints[i].incoming)] = startNode.id;
+						vehicle.ad.wayPoints[i].incoming[ADTableLength(vehicle.ad.wayPoints[i].incoming)+1] = startNode.id;
 						AutoDriveCourseEditEvent:sendEvent(startNode);
 					end;
 				end;
@@ -234,11 +235,16 @@ function AutoDrive:handleRecalculation(vehicle)
 				AutoDrive.recalculationPercentage = AutoDrive:ContiniousRecalculation();
 				AutoDrive.Recalculation.nextCalculationSkipFrames = 0;
 
-				AutoDrive:printMessage(g_i18n:getText("AD_Recalculationg_routes_status") .. " " .. AutoDrive.recalculationPercentage .. "%");
+				AutoDrive:printMessage(vehicle, g_i18n:getText("AD_Recalculationg_routes_status") .. " " .. AutoDrive.recalculationPercentage .. "%");
+				AutoDrive.print.showMessageFor = 500;
+				if AutoDrive.recalculationPercentage == 100 then
+					AutoDrive.print.showMessageFor = 12000;
+				end;
 			else
 				AutoDrive.Recalculation.nextCalculationSkipFrames =  AutoDrive.Recalculation.nextCalculationSkipFrames - 1;
 			end;
 		end;
+
 	end;
 end;
 
@@ -265,11 +271,42 @@ function AutoDrive:getDistanceBetweenNodes(start, target)
 	local euclidianDistance = AutoDrive:getDistance(AutoDrive.mapWayPoints[start].x, AutoDrive.mapWayPoints[start].z, AutoDrive.mapWayPoints[target].x, AutoDrive.mapWayPoints[target].z);
 
 	local distance = euclidianDistance;
-	if isMapMarker and AutoDrive.avoidMarkers == true then
-		distance = distance + AutoDrive.MAP_MARKER_DETOUR;
+	if isMapMarker and AutoDrive:getSetting("avoidMarkers") == true then
+		distance = distance + AutoDrive:getSetting("mapMarkerDetour");
 	end;
 
 	return distance;
+end;
+
+function AutoDrive:getDriveTimeBetweenNodes(start, target)
+	local wp_ahead = AutoDrive.mapWayPoints[target];
+	local wp_current = AutoDrive.mapWayPoints[start];
+
+	local angle = 0;
+
+	if wp_current.out ~= nil and wp_current.out[1] ~= nil then
+		local wp_ref = AutoDrive.mapWayPoints[wp_current.out[1]];
+		angle = AutoDrive:angleBetween( 	{x=	wp_ahead.x	-	wp_current.x, z = wp_ahead.z - wp_current.z },
+												{x=	wp_current.x-	wp_ref.x, z = wp_current.z - wp_ref.z } )
+		angle = math.abs(angle);
+	end; 
+	
+	local driveTime = 0;
+	local drivingSpeed = 50;
+
+	if angle < 3 then drivingSpeed = 50; end;
+	if angle >= 3 and angle < 5 then drivingSpeed = 38; end;
+	if angle >= 5 and angle < 8 then drivingSpeed = 27; end;
+	if angle >= 8 and angle < 12 then drivingSpeed = 20; end;
+	if angle >= 12 and angle < 15 then drivingSpeed = 13; end;
+	if angle >= 15 and angle < 20 then drivingSpeed = 10; end;
+	if angle >= 20 and angle < 30 then drivingSpeed = 7; end;
+	if angle >= 30 then drivingSpeed = 4; end;
+
+	local drivingDistance = AutoDrive:getDistanceBetweenNodes(start, target);
+
+	driveTime = (drivingDistance) / (drivingSpeed * (1000/3600));
+	return driveTime;
 end;
 
 function AutoDrive:sortNodesByDistance(x, z, listOfNodes)
@@ -339,6 +376,10 @@ function AutoDrive:FastShortestPath(Graph,start,markerName, markerID)
 end;
 
 function AutoDrive:findClosestWayPoint(veh)
+	if veh.ad.closest ~= nil then
+		return veh.ad.closest;
+	end;
+
 	--returns waypoint closest to vehicle position
 	local x1,y1,z1 = getWorldTranslation(veh.components[1].node);
 	local closest = 1;
@@ -354,6 +395,8 @@ function AutoDrive:findClosestWayPoint(veh)
 		end;
 	end;
 	
+	veh.ad.closest = closest;
+
 	return closest;
 end;
 

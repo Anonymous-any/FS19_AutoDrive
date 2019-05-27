@@ -68,6 +68,10 @@ function AutoDrive:startAD(vehicle)
 			end;
 		end;	
 	end;
+
+	
+	vehicle.ad.driverOnTheWay = false;
+	vehicle.ad.tryingToCallDriver = false;
 end;
 
 function AutoDrive:stopAD(vehicle)
@@ -129,6 +133,9 @@ function AutoDrive:disableAutoDriveFunctions(vehicle)
 	
 	vehicle.ad.combineUnloadInFruit = false;
 	vehicle.ad.combineUnloadInFruitWaitTimer = AutoDrive.UNLOAD_WAIT_TIMER;
+	
+	vehicle.ad.combineFieldArea = nil;
+	vehicle.ad.combineFruitToCheck = nil; 
 
 	AutoDrive.waitingUnloadDrivers[vehicle] = nil;
 
@@ -277,7 +284,35 @@ function AutoDrive:detectTraffic(vehicle)
                         y = y+2,
 						z = z + (width/2) * ortho.z +  (length/2 + lookAheadDistance) * vehicleVector.z};
 
-	
+
+	--local box = {};
+	--box.center = {};
+	--box.size = {};
+	--box.center[1] = 0;
+	--box.center[2] = 3;
+	--box.center[3] = length;
+	--box.size[1] = width/2;
+	--box.size[2] = 1.5;
+	--box.size[3] = lookAheadDistance/2;
+	--box.x, box.y, box.z = localToWorld(vehicle.components[1].node, box.center[1], box.center[2], box.center[3])
+	--box.zx, box.zy, box.zz = localDirectionToWorld(vehicle.components[1].node, math.sin(vehicle.rotatedTime),0,math.cos(vehicle.rotatedTime))
+	--box.xx, box.xy, box.xz = localDirectionToWorld(vehicle.components[1].node, -math.cos(vehicle.rotatedTime),0,math.sin(vehicle.rotatedTime))
+	--box.ry = math.atan2(box.zx, box.zz)
+	--local boxCenter = { x = x + (((length/2 + (lookAheadDistance/2)) * vehicleVector.x)),
+						--y = y+3,
+						--z = z + (((length/2 + (lookAheadDistance/2)) * vehicleVector.z)) };
+
+	--local shapes = overlapBox(boxCenter.x,boxCenter.y,boxCenter.z, 0,box.ry,0, box.size[1],box.size[2],box.size[3], "collisionTestCallback", nil, AIVehicleUtil.COLLISION_MASK, true, true, true)
+	--local red = 0;
+	--if shapes > 0 then
+		--red = 1;
+	--end;
+	--DebugUtil.drawOverlapBox(boxCenter.x,boxCenter.y,boxCenter.z, 0,box.ry,0, box.size[1],box.size[2],box.size[3], red, 0, 0);
+
+	--if shapes > 0 then
+		--return true;
+	--end;
+
     --AutoDrive:drawLine(boundingBox[1], boundingBox[2], 0, 0, 0, 1);
     --AutoDrive:drawLine(boundingBox[2], boundingBox[3], 0, 0, 0, 1);
     --AutoDrive:drawLine(boundingBox[3], boundingBox[4], 0, 0, 0, 1);
@@ -304,42 +339,45 @@ function AutoDrive:detectTraffic(vehicle)
 							local otherPos = {};
 							otherPos.x,otherPos.y,otherPos.z = getWorldTranslation( other.components[1].node ); 
 
-							local rx,ry,rz = localDirectionToWorld(other.components[1].node, 0, 0, 1);
+							local distance = AutoDrive:getDistance(x,z,otherPos.x,otherPos.z);
+							if distance < 100 then
+								local rx,ry,rz = localDirectionToWorld(other.components[1].node, 0, 0, 1);
 
-							local otherVectorToWp = {};
-							otherVectorToWp.x = rx;
-							otherVectorToWp.z = rz;
+								local otherVectorToWp = {};
+								otherVectorToWp.x = rx;
+								otherVectorToWp.z = rz;
 
-							local otherPos2 = {};
-							otherPos2.x = otherPos.x + (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)));
-							otherPos2.y = y;
-							otherPos2.z = otherPos.z + (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)));
-							local otherOrtho = { x=-otherVectorToWp.z, z=otherVectorToWp.x };
+								local otherPos2 = {};
+								otherPos2.x = otherPos.x + (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)));
+								otherPos2.y = y;
+								otherPos2.z = otherPos.z + (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)));
+								local otherOrtho = { x=-otherVectorToWp.z, z=otherVectorToWp.x };
 
-							local otherBoundingBox = {};
-                            otherBoundingBox[1] ={ 	x = otherPos.x + (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
-                                                    y = y,
-													z = otherPos.z + (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
+								local otherBoundingBox = {};
+								otherBoundingBox[1] ={ 	x = otherPos.x + (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
+														y = y,
+														z = otherPos.z + (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
 
-							otherBoundingBox[2] ={ 	x = otherPos.x - (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
-                                                    y = y,
-                                                    z = otherPos.z - (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
-							otherBoundingBox[3] ={ 	x = otherPos.x - (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
-                                                    y = y,
-                                                    z = otherPos.z - (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
+								otherBoundingBox[2] ={ 	x = otherPos.x - (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
+														y = y,
+														z = otherPos.z - (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) + (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
+								otherBoundingBox[3] ={ 	x = otherPos.x - (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
+														y = y,
+														z = otherPos.z - (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
 
-							otherBoundingBox[4] ={ 	x = otherPos.x + (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
-                                                    y = y,
-                                                    z = otherPos.z + (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
+								otherBoundingBox[4] ={ 	x = otherPos.x + (otherWidth/2) * ( otherOrtho.x / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.x/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z))),
+														y = y,
+														z = otherPos.z + (otherWidth/2) * ( otherOrtho.z / (math.abs(otherOrtho.x)+math.abs(otherOrtho.z))) - (otherLength/2) * (otherVectorToWp.z/(math.abs(otherVectorToWp.x)+math.abs(otherVectorToWp.z)))};
 
-							
-                            --AutoDrive:drawLine(otherBoundingBox[1], otherBoundingBox[2], 0, 0, 1, 1);
-                            --AutoDrive:drawLine(otherBoundingBox[2], otherBoundingBox[3], 0, 0, 1, 1);
-                            --AutoDrive:drawLine(otherBoundingBox[3], otherBoundingBox[4], 0, 0, 1, 1);
-                            --AutoDrive:drawLine(otherBoundingBox[4], otherBoundingBox[1], 0, 0, 1, 1);							
+								
+								--AutoDrive:drawLine(otherBoundingBox[1], otherBoundingBox[2], 0, 0, 1, 1);
+								--AutoDrive:drawLine(otherBoundingBox[2], otherBoundingBox[3], 0, 0, 1, 1);
+								--AutoDrive:drawLine(otherBoundingBox[3], otherBoundingBox[4], 0, 0, 1, 1);
+								--AutoDrive:drawLine(otherBoundingBox[4], otherBoundingBox[1], 0, 0, 1, 1);							
 
-							if AutoDrive:BoxesIntersect(boundingBox, otherBoundingBox) == true then
-								return true;
+								if AutoDrive:BoxesIntersect(boundingBox, otherBoundingBox) == true then
+									return true;
+								end;
 							end;
 						end;
 					end;

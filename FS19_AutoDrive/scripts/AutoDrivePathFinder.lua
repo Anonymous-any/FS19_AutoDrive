@@ -1,6 +1,19 @@
 AutoDrive.MAX_PATHFINDER_STEPS_PER_FRAME = 10;
 AutoDrive.MAX_PATHFINDER_STEPS_TOTAL = 2500;
-AutoDrive.PATHFINDER_TARGET_DISTANCE = 20;
+AutoDrive.PATHFINDER_TARGET_DISTANCE = 25;
+AutoDrive.PATHFINDER_START_DISTANCE = 5;
+AutoDrive.PP_UP = 0;
+AutoDrive.PP_UP_RIGHT = 1;
+AutoDrive.PP_RIGHT = 2;
+AutoDrive.PP_DOWN_RIGHT = 3;
+AutoDrive.PP_DOWN = 4;
+AutoDrive.PP_DOWN_LEFT = 5;
+AutoDrive.PP_LEFT = 6;
+AutoDrive.PP_UP_LEFT = 7;
+
+AutoDrive.PP_MIN_DISTANCE = 20;
+AutoDrive.PP_CELL_X = 8;
+AutoDrive.PP_CELL_Z = 8;
 AutoDrivePathFinder = {};
 
 function AutoDrivePathFinder:startPathPlanningToCombine(driver, combine, dischargeNode)       
@@ -11,22 +24,24 @@ function AutoDrivePathFinder:startPathPlanningToCombine(driver, combine, dischar
     local combineNormalVector = {x= -combineVector.z ,z= combineVector.x};	
     
     local nodeX,nodeY,nodeZ = getWorldTranslation(dischargeNode);       
-
-    local wpAhead = {x= (nodeX + 8*rx) - AutoDrive.PATHFINDER_PIPE_OFFSET * combineNormalVector.x, y = worldY, z = nodeZ + 8*rz  - AutoDrive.PATHFINDER_PIPE_OFFSET * combineNormalVector.z};
-    local wpCurrent = {x= (nodeX - AutoDrive.PATHFINDER_PIPE_OFFSET * combineNormalVector.x ), y = worldY, z = nodeZ - AutoDrive.PATHFINDER_PIPE_OFFSET * combineNormalVector.z};
-	local wpBehind = {x= (nodeX - AutoDrive.PATHFINDER_TARGET_DISTANCE*rx - AutoDrive.PATHFINDER_PIPE_OFFSET * combineNormalVector.x), y = worldY, z = nodeZ - AutoDrive.PATHFINDER_TARGET_DISTANCE*rz - AutoDrive.PATHFINDER_PIPE_OFFSET * combineNormalVector.z }; --make this target
+    local pipeOffset = AutoDrive:getSetting("pipeOffset");
+    local wpAhead = {x= (nodeX + 8*rx) - pipeOffset * combineNormalVector.x, y = worldY, z = nodeZ + 8*rz  - pipeOffset * combineNormalVector.z};
+    local wpCurrent = {x= (nodeX - pipeOffset * combineNormalVector.x ), y = worldY, z = nodeZ - pipeOffset * combineNormalVector.z};
+    local wpBehind_close = {x= (nodeX - 5*rx - pipeOffset * combineNormalVector.x), y = worldY, z = nodeZ - 5*rz - pipeOffset * combineNormalVector.z };
+    
+	local wpBehind = {x= (nodeX - AutoDrive.PATHFINDER_TARGET_DISTANCE*rx - pipeOffset * combineNormalVector.x), y = worldY, z = nodeZ - AutoDrive.PATHFINDER_TARGET_DISTANCE*rz - pipeOffset * combineNormalVector.z }; --make this target
     
 
     local driverWorldX,driverWorldY,driverWorldZ = getWorldTranslation( driver.components[1].node );
 	local driverRx,driverRy,driverRz = localDirectionToWorld(driver.components[1].node, 0,0,1);	
 	local driverVector = {x= math.sin(driverRx) ,z= math.sin(driverRz)};	
-	local startX = driverWorldX + AutoDrive.PATHFINDER_TARGET_DISTANCE*driverRx;
-	local startZ = driverWorldZ + AutoDrive.PATHFINDER_TARGET_DISTANCE*driverRz;
+	local startX = driverWorldX + AutoDrive.PATHFINDER_START_DISTANCE*driverRx;
+	local startZ = driverWorldZ + AutoDrive.PATHFINDER_START_DISTANCE*driverRz;
 	
 	local angleGrid = math.atan2(driverVector.z, driverVector.x);
 	angleGrid = normalizeAngle(angleGrid);
 
-	local atan = angleGrid;
+    local atan = angleGrid;
 	
 	local sin = math.sin(atan);
 	local cos = math.cos(atan);
@@ -42,10 +57,13 @@ function AutoDrivePathFinder:startPathPlanningToCombine(driver, combine, dischar
     -- AutoDrivePathFinder:init(driver, startX, startZ, targetX, targetY, targetVector, vectorX, vectorZ)
     AutoDrivePathFinder:init(driver, startX, startZ, wpBehind.x, wpBehind.z, combineVector, vectorX, vectorZ, combine) 
     
-	driver.ad.pf.appendWayPoints = {};
-	driver.ad.pf.appendWayPoints[1] = wpCurrent;
-	driver.ad.pf.appendWayPoints[2] = wpAhead;
-	driver.ad.pf.appendWayPointCount = 2;	    
+    driver.ad.pf.appendWayPoints = {};
+	driver.ad.pf.appendWayPoints[1] = wpBehind_close;
+	driver.ad.pf.appendWayPoints[2] = wpCurrent;
+	driver.ad.pf.appendWayPoints[3] = wpAhead;
+    driver.ad.pf.appendWayPointCount = 3;	   
+    
+    driver.ad.pf.goingToCombine = true;
 end;
 
 function AutoDrivePathFinder:startPathPlanningToStartPosition(driver, combine)       
@@ -53,8 +71,8 @@ function AutoDrivePathFinder:startPathPlanningToStartPosition(driver, combine)
     local driverWorldX,driverWorldY,driverWorldZ = getWorldTranslation( driver.components[1].node );
 	local driverRx,driverRy,driverRz = localDirectionToWorld(driver.components[1].node, 0,0,1);	
 	local driverVector = {x= math.sin(driverRx) ,z= math.sin(driverRz)};	
-	local startX = driverWorldX + AutoDrive.PATHFINDER_TARGET_DISTANCE*driverRx;
-	local startZ = driverWorldZ + AutoDrive.PATHFINDER_TARGET_DISTANCE*driverRz;
+	local startX = driverWorldX + AutoDrive.PATHFINDER_START_DISTANCE*driverRx;
+	local startZ = driverWorldZ + AutoDrive.PATHFINDER_START_DISTANCE*driverRz;
 	
 	local angleGrid = math.atan2(driverVector.z, driverVector.x);
 	angleGrid = normalizeAngle(angleGrid);
@@ -95,6 +113,8 @@ function AutoDrivePathFinder:startPathPlanningToStartPosition(driver, combine)
 	driver.ad.pf.appendWayPoints[1] = preTargetPoint;
     driver.ad.pf.appendWayPoints[2] = targetPoint;
     driver.ad.pf.appendWayPointCount = 2;
+
+    driver.ad.pf.goingToCombine = false;
 end;
 
 function AutoDrivePathFinder:init(driver, startX, startZ, targetX, targetZ, targetVector, vectorX, vectorZ, combine)    
@@ -121,7 +141,8 @@ function AutoDrivePathFinder:init(driver, startX, startZ, targetX, targetZ, targ
     driver.ad.pf.isFinished = false;
     driver.ad.pf.fallBackMode = false;
     driver.ad.pf.combine = combine;
-    driver.ad.pf.fruitToCheck = nil;
+    driver.ad.pf.fruitToCheck = driver.ad.combineFruitToCheck;
+    driver.ad.pf.fieldArea = driver.ad.combineFieldArea;
     
     driver.ad.pf.targetCell = AutoDrivePathFinder:worldLocationToGridLocation(driver.ad.pf, targetX, targetZ);
     local targetDirection = AutoDrivePathFinder:worldDirectionToGridDirection(driver.ad.pf, targetVector)
@@ -328,14 +349,14 @@ function AutoDrivePathFinder:checkGridCell(pf, cell)
         if cell.hasRequested == false then            
             local worldPos = AutoDrivePathFinder:gridLocationToWorldLocation(pf, cell);
 
-            local cornerX = worldPos.x - (pf.vectorX.x + pf.vectorZ.x)/2
-            local cornerZ = worldPos.z - (pf.vectorX.z + pf.vectorZ.z)/2
+            local cornerX = worldPos.x + (-pf.vectorX.x - pf.vectorZ.x)/2
+            local cornerZ = worldPos.z + (-pf.vectorX.z - pf.vectorZ.z)/2
 
-            local corner2X = worldPos.x - (pf.vectorX.x + pf.vectorZ.x)/2
-            local corner2Z = worldPos.z + (pf.vectorX.z + pf.vectorZ.z)/2
+            local corner2X = worldPos.x + (pf.vectorX.x - pf.vectorZ.x)/2
+            local corner2Z = worldPos.z + (pf.vectorX.z - pf.vectorZ.z)/2
 
-            local corner3X = worldPos.x + (pf.vectorX.x + pf.vectorZ.x)/2
-            local corner3Z = worldPos.z - (pf.vectorX.z + pf.vectorZ.z)/2
+            local corner3X = worldPos.x + (-pf.vectorX.x + pf.vectorZ.x)/2
+            local corner3Z = worldPos.z + (-pf.vectorX.z + pf.vectorZ.z)/2
 
             local corner4X = worldPos.x + (pf.vectorX.x + pf.vectorZ.x)/2
             local corner4Z = worldPos.z + (pf.vectorX.z + pf.vectorZ.z)/2
@@ -358,7 +379,12 @@ function AutoDrivePathFinder:checkGridCell(pf, cell)
             end
 
             shapes = overlapBox(worldPos.x,y,worldPos.z, 0,angleRad,0, AutoDrive.PP_CELL_X,5,AutoDrive.PP_CELL_Z, "collisionTestCallbackIgnore", nil, Player.COLLISIONMASK_TRIGGER, true, true, true)
-            cell.hasCollision = cell.hasCollision or (shapes > 0);            
+            cell.hasCollision = cell.hasCollision or (shapes > 0);    
+
+            --allow collision in the first few grid. as it also detects the driver and trailer itself
+            if ((math.abs(cell.x) <= 2) and (math.abs(cell.z) <= 2)) or cellDistance(pf, cell) <= 3 then --also allow collision at the end if other drivers are waiting in line
+                cell.hasCollision = false;
+            end;
 
             if pf.fruitToCheck == nil then
                 --make async query until fruittype is known
@@ -372,7 +398,7 @@ function AutoDrivePathFinder:checkGridCell(pf, cell)
                 cell.hasFruit = cell.isRestricted;
 
                 --Allow fruit in the first few grid cells
-                if ((math.abs(cell.x) <= 2) and (math.abs(cell.z) <= 2)) or cellDistance(pf, cell) <= 2 then
+                if (((math.abs(cell.x) <= 2) and (math.abs(cell.z) <= 2)) and pf.driver.ad.combineUnloadInFruit) or cellDistance(pf, cell) <= 2 then
                     cell.isRestricted = false;
                 end;
                 cell.hasInfo = true;
@@ -538,7 +564,9 @@ function AutoDrivePathFinder:onFieldDataUpdateFinished(pf, fielddata, cell)
         if maxIndex > 0 and maxAmount > (0.2 * fielddata.fieldArea) and pf.fruitToCheck == nil  and fielddata.fieldArea > 150 then
             --print("Avoiding fruit: " .. maxIndex .. " from now on. FieldArea: " .. fielddata.fieldArea);
 			pf.fruitToCheck = maxIndex;
-			pf.fieldArea = fielddata.fieldArea;
+            pf.fieldArea = fielddata.fieldArea;
+            pf.driver.ad.combineFieldArea = pf.fieldArea;
+            pf.driver.ad.combineFruitToCheck = pf.fruitToCheck; 
 		end;
 	
 		--Allow fruit in the first few grid cells
@@ -580,7 +608,8 @@ function AutoDrivePathFinder:worldDirectionToGridDirection(pf, vector)
 	local angleWorldDirection = math.atan2(vector.z, vector.x);
 	angleWorldDirection = normalizeAngle2(angleWorldDirection);
 
-	local angleRad = math.atan2(vecUp.z, vecUp.x);
+    --local angleRad = math.atan2(vecUp.z, vecUp.x);
+    local angleRad = math.atan2(pf.vectorX.z, pf.vectorX.x);
 	angleRad = normalizeAngle2(angleRad);
 
 	local upRightAngle = normalizeAngle2(angleRad + math.rad(45));
@@ -594,19 +623,19 @@ function AutoDrivePathFinder:worldDirectionToGridDirection(pf, vector)
     local direction = AutoDrive.PP_UP;
     --print("vectorUp: " .. math.deg(angleRad) ..  " angle target: " .. math.deg(angleWorldDirection));
 
-	if math.abs( math.deg( normalizeAngle2( angleWorldDirection - upRightAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - upRightAngle ) )) >= 347.5 then
+	if math.abs( math.deg( normalizeAngle2( angleWorldDirection - upRightAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - upRightAngle ) )) >= 337.5 then
 		direction = AutoDrive.PP_UP_RIGHT;
-	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - rightAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - rightAngle ) )) >= 347.5 then
+	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - rightAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - rightAngle ) )) >= 337.5 then
 		direction = AutoDrive.PP_RIGHT;
-	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - downRightAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - downRightAngle ) )) >= 347.5 then
+	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - downRightAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - downRightAngle ) )) >= 337.5 then
 		direction = AutoDrive.PP_DOWN_RIGHT;
-	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - downAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - downAngle ) )) >= 347.5 then
+	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - downAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - downAngle ) )) >= 337.5 then
 		direction = AutoDrive.PP_DOWN;
-	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - downLeftAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - downLeftAngle ) )) >= 347.5 then
+	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - downLeftAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - downLeftAngle ) )) >= 337.5 then
 		direction = AutoDrive.PP_DOWN_LEFT;
-	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - leftAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - leftAngle ) )) >= 347.5 then
+	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - leftAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - leftAngle ) )) >= 337.5 then
 		direction = AutoDrive.PP_LEFT;
-	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - upLeftAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - upLeftAngle ) )) >= 347.5 then
+	elseif math.abs( math.deg( normalizeAngle2( angleWorldDirection - upLeftAngle ) )) <= 22.5 or math.abs( math.deg( normalizeAngle2( angleWorldDirection - upLeftAngle ) )) >= 337.5 then
 		direction = AutoDrive.PP_UP_LEFT;
 	end;
 
@@ -692,12 +721,12 @@ function AutoDrivePathFinder:drawDebugForPF(pf)
                 pointB.z = pointB.z - pf.vectorX.z * size - pf.vectorZ.z * size;
                 pointB.y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, pointB.x, 1, pointB.z) + 3;
                 local pointC = AutoDrivePathFinder:gridLocationToWorldLocation(pf, cell);
-                pointC.x = pointC.x - pf.vectorX.x * size - pf.vectorZ.x * size;
-                pointC.z = pointC.z + pf.vectorX.z * size + pf.vectorZ.z * size;
+                pointC.x = pointC.x + pf.vectorX.x * size - pf.vectorZ.x * size;
+                pointC.z = pointC.z + pf.vectorX.z * size - pf.vectorZ.z * size;
                 pointC.y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, pointC.x, 1, pointC.z) + 3;
                 local pointD = AutoDrivePathFinder:gridLocationToWorldLocation(pf, cell);
-                pointD.x = pointD.x + pf.vectorX.x * size + pf.vectorZ.x * size;
-                pointD.z = pointD.z - pf.vectorX.z * size - pf.vectorZ.z * size;
+                pointD.x = pointD.x - pf.vectorX.x * size + pf.vectorZ.x * size;
+                pointD.z = pointD.z - pf.vectorX.z * size + pf.vectorZ.z * size;
                 pointD.y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, pointD.x, 1, pointD.z) + 3;
                 
                 if cell.hasInfo == true then
@@ -732,12 +761,12 @@ function AutoDrivePathFinder:drawDebugForPF(pf)
             pointB.z = pointB.z - pf.vectorX.z * size - pf.vectorZ.z * size;
             pointB.y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, pointB.x, 1, pointB.z) + 3;
             local pointC = AutoDrivePathFinder:gridLocationToWorldLocation(pf, pf.targetCell);
-            pointC.x = pointC.x - pf.vectorX.x * size - pf.vectorZ.x * size;
-            pointC.z = pointC.z + pf.vectorX.z * size + pf.vectorZ.z * size;
+            pointC.x = pointC.x + pf.vectorX.x * size - pf.vectorZ.x * size;
+            pointC.z = pointC.z + pf.vectorX.z * size - pf.vectorZ.z * size;
             pointC.y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, pointC.x, 1, pointC.z) + 3;
             local pointD = AutoDrivePathFinder:gridLocationToWorldLocation(pf, pf.targetCell);
-            pointD.x = pointD.x + pf.vectorX.x * size + pf.vectorZ.x * size;
-            pointD.z = pointD.z - pf.vectorX.z * size - pf.vectorZ.z * size;
+            pointD.x = pointD.x - pf.vectorX.x * size + pf.vectorZ.x * size;
+            pointD.z = pointD.z - pf.vectorX.z * size + pf.vectorZ.z * size;
             pointD.y = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode, pointD.x, 1, pointD.z) + 3;
 
             AutoDrive:drawLine(pointA, pointB, 1, 1, 1, 1);

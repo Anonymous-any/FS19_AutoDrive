@@ -73,8 +73,9 @@ function string:split(sep)
     return fields
 end
 
-function AutoDrive:printMessage(newMessage)
+function AutoDrive:printMessage(vehicle, newMessage)
 	AutoDrive.print.nextMessage = newMessage;
+	AutoDrive.print.nextReferencedVehicle = vehicle;
 end;
 
 function ADBoolToString(value)
@@ -178,6 +179,7 @@ AIVehicleUtil.driveInDirection = function (self, dt, steeringAngleLimit, acceler
 		--FS 17 Version WheelsUtil.updateWheelsPhysics(self, dt, self.lastSpeedReal, acc, not allowedToDrive, self.requiredDriveMode);
 		WheelsUtil.updateWheelsPhysics(self, dt, self.lastSpeedReal*self.movingDirection, acc, not allowedToDrive, true)
     end
+
 end
 
 function AutoDrive:onActivateObject(superFunc,vehicle)
@@ -207,6 +209,16 @@ function AutoDrive:onActivateObject(superFunc,vehicle)
 	end
 
 	superFunc(self, vehicle);
+end
+
+function AutoDrive:onFillTypeSelection(superFunc, fillType)
+	if fillType ~= nil and fillType ~= FillType.UNKNOWN then
+		local validFillableObject = self.validFillableObject
+		if validFillableObject ~= nil then --and validFillableObject:getRootVehicle() == g_currentMission.controlledVehicle
+			local fillUnitIndex = self.validFillableFillUnitIndex
+			self:setIsLoading(true, validFillableObject, fillUnitIndex, fillType)
+		end
+	end
 end
 
 -- LoadTrigger doesn't allow filling non controlled tools

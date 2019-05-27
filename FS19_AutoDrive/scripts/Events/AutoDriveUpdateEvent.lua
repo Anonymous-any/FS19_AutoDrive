@@ -69,6 +69,14 @@ function AutoDriveUpdateEvent:writeStream(streamId, connection)
 		return;
 	end;	
 	streamWriteInt32(streamId, NetworkUtil.getObjectId(self.vehicle));
+
+	if self.reason == "currentWayPoint" then
+		streamWriteInt8(streamId, 1);
+		streamWriteInt16(streamId, self.currentWayPoint);
+		return;
+	end;
+
+	streamWriteInt8(streamId, 0);
 	
 	streamWriteBool(streamId, self.isActive);
 	streamWriteBool(streamId, self.isStopping);
@@ -140,6 +148,7 @@ function AutoDriveUpdateEvent:writeStream(streamId, connection)
 	streamWriteInt8(streamId, self.disableAI);
 
 	streamWriteStringOrEmpty(streamId, AutoDrive.print.currentMessage);
+	streamWriteInt32OrEmpty(streamId, NetworkUtil.getObjectId(AutoDrive.print.referencedVehicle));
 	-- print("event writeStream")
 end;
 
@@ -150,6 +159,16 @@ function AutoDriveUpdateEvent:readStream(streamId, connection)
 	
 	local id = streamReadInt32(streamId);
 	local vehicle = NetworkUtil.getObject(id);
+
+	local updateMode = streamReadInt8(streamId);
+	if updateMode == 1 then
+		local currentWayPoint = streamReadInt16(streamId);
+		if vehicle == nil or vehicle.ad == nil then
+			return;
+		end;
+		vehicle.ad.currentWayPoint = currentWayPoint;
+		return;
+	end;
 	
 	local isActive = streamReadBool(streamId);
 	local isStopping = streamReadBool(streamId);
@@ -275,6 +294,13 @@ function AutoDriveUpdateEvent:readStream(streamId, connection)
 		vehicle.ad.disableAI = disableAI;
 
 		AutoDrive.print.currentMessage = AD_currentMessage;
+		local refVehicleInt = streamReadInt32(streamId);
+		if refVehicleInt ~= 0 then
+			local referencedVehicle = NetworkUtil.getObject(id);
+			if referencedVehicle ~= nil then
+				AutoDrive.print.referencedVehicle = referencedVehicle;
+			end;
+		end;
 	end;
 		
 	if g_server ~= nil then	
@@ -442,9 +468,10 @@ function AutoDriveUpdateEvent:compareTo(oldEvent)
 		reason = reason .. " combineState";
 	end;
 
-	--if reason ~= "" then
-		--print("Reason: " .. reason);
-	--end;
+	if reason ~= "" then
+		--print("Vehicle " .. self.vehicle.name .. " sends update. Reason: " .. reason);
+		self.reason = reason;
+	end;
 
 	return remained
 end;

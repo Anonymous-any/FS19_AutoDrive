@@ -23,7 +23,7 @@ public class EditorListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         System.out.println("ActionCommand: " + e.getActionCommand());
         if (e.getActionCommand() == "Save") {
-            int returnVal = fc.showOpenDialog(editor);
+            int returnVal = fc.showSaveDialog(editor);
 
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 editor.savedFile = fc.getSelectedFile();
@@ -39,11 +39,17 @@ public class EditorListener implements ActionListener {
         if (e.getActionCommand() == "Remove Nodes") {
             this.editor.editorState = AutoDriveEditor.EDITORSTATE_DELETING;
         }
+        if (e.getActionCommand() == "Remove Destinations") {
+            this.editor.editorState = AutoDriveEditor.EDITORSTATE_DELETING_DESTINATION;
+        }
         if (e.getActionCommand() == "Connect Nodes") {
             this.editor.editorState = AutoDriveEditor.EDITORSTATE_CONNECTING;
         }
         if (e.getActionCommand() == "Create Nodes") {
             this.editor.editorState = AutoDriveEditor.EDITORSTATE_CREATING;
+        }
+        if (e.getActionCommand() == "Create Destinations") {
+            this.editor.editorState = AutoDriveEditor.EDITORSTATE_CREATING_DESTINATION;
         }
         if (e.getActionCommand() == "Load") {
             int returnVal = fc.showOpenDialog(editor);
@@ -77,6 +83,9 @@ public class EditorListener implements ActionListener {
                     e1.printStackTrace();
                 }
             }
+        }
+        if (e.getActionCommand() == "FourTimesMap") {
+            editor.isFourTimesMap = editor.fourTimesMap.isSelected();
         }
     }
 }

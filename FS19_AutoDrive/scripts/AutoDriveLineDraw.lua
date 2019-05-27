@@ -30,7 +30,9 @@ function AutoDrive:drawJobs()
 
     for i=1,AutoDrive.LineDraw.jobCounter,1 do
         local job = AutoDrive.LineDraw.jobs[i];
-        AutoDrive:parameterizeLine(AutoDrive.LineDraw.lines[i], job.startPoint, job.targetPoint, job.color, true);
+        if AutoDrive.LineDraw.lines[i] ~= nil then
+            AutoDrive:parameterizeLine(AutoDrive.LineDraw.lines[i], job.startPoint, job.targetPoint, job.color, true);
+        end;
     end;
 
     --Reset visibility of 'idle' lines
