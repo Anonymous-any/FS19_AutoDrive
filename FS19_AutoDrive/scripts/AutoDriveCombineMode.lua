@@ -77,6 +77,7 @@ function AutoDrive:callDriverToCombine(combine)
                     closestDriver.ad.isUnloading = false;
                     closestDriver.ad.isLoading = false;
                     closestDriver.ad.initialized = false 
+                    closestDriver.ad.wayPoints = {};        
                     closestDriver.ad.wayPoints = {};
                     
                     combine.ad.tryingToCallDriver = false; 
@@ -164,6 +165,25 @@ function AutoDrive:initializeADCombine(vehicle, dt)
                     --wait for combine to move away. Currently by fixed timer of 15s
                     if vehicle.ad.combineUnloadInFruitWaitTimer > 0 then
                         vehicle.ad.combineUnloadInFruitWaitTimer = vehicle.ad.combineUnloadInFruitWaitTimer - dt;
+                        if vehicle.ad.combineUnloadInFruitWaitTimer > 13000 then
+                            local finalSpeed = 8;
+                            local acc = 1;
+                            local allowedToDrive = true;
+                            
+                            local node = vehicle.components[1].node;					
+                            if vehicle.getAIVehicleDirectionNode ~= nil then
+                                node = vehicle:getAIVehicleDirectionNode();
+                            end;
+                            local x,y,z = getWorldTranslation(vehicle.components[1].node);   
+                            local rx,ry,rz = localDirectionToWorld(vehicle.components[1].node, 0,0,-1);	
+                            x = x + rx;
+                            z = z + rz;
+                            local lx, lz = AIVehicleUtil.getDriveDirection(vehicle.components[1].node, x, y, z);
+                            AIVehicleUtil.driveInDirection(vehicle, dt, 30, acc, 0.2, 20, allowedToDrive, false, nil, nil, finalSpeed, 1);
+                        else
+                            AutoDrive:getVehicleToStop(vehicle, false, dt);
+                        end;
+
                         return true;
                     end;
                 end;                                       
@@ -202,6 +222,15 @@ end;
 
 function AutoDrive:handlePathPlanning(vehicle)
     AutoDrivePathFinder:updatePathPlanning(vehicle);
+
+    if AutoDrivePathFinder:isPathPlanningFinished(vehicle) then
+        vehicle.ad.wayPoints = vehicle.ad.pf.wayPoints;
+        vehicle.ad.currentWayPoint = 1;
+        return true
+    end;
+    return false;
+end;
+
 
     if AutoDrivePathFinder:isPathPlanningFinished(vehicle) then
         vehicle.ad.wayPoints = vehicle.ad.pf.wayPoints;

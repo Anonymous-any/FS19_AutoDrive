@@ -850,6 +850,7 @@ function AutoDriveHud:mouseEvent(vehicle, posX, posY, isDown, isUp, button)
 		end;
 	end;
 
+	AutoDrive.mouseWheelActive = mouseWheelActive or self.PullDownMouseWheelActive;
 	AutoDrive.mouseWheelActive = mouseWheelActive;
 end;
 
@@ -888,6 +889,10 @@ function AutoDriveHud:getModeName(vehicle)
 end;
 
 function AutoDriveHud:handleMouseEventForPullDownList(vehicle, posX, posY, isDown, isUp, button)
+	self.PullDownMouseWheelActive = false;
+	if vehicle == nil or vehicle.ad == nil then
+		return false;
+	end;
 	if vehicle.ad.pullDownList.active == false or AutoDrive.showMouse == false then
 		return false;
 	end;
@@ -903,6 +908,16 @@ function AutoDriveHud:handleMouseEventForPullDownList(vehicle, posX, posY, isDow
 	end;
 
 	vehicle.ad.pullDownList.bottomItem = math.min(vehicle.ad.pullDownList.topItem + AutoDrive.PULLDOWN_ITEM_COUNT, ADTableLength(vehicle.ad.pullDownList.itemList));
+
+	local adPosX = vehicle.ad.pullDownList.posX
+	local adPosY = vehicle.ad.pullDownList.posY;
+	local posToCheck = adPosY;
+	if vehicle.ad.pullDownList.downwards == true then
+		posToCheck = posToCheck - vehicle.ad.pullDownList.height;
+	end;
+	if posX >= adPosX and posX <= (adPosX + vehicle.ad.pullDownList.width) and posY >= posToCheck and posY <= (posToCheck + vehicle.ad.pullDownList.height) then			
+		self.PullDownMouseWheelActive = true;
+	end;
 
 
 	local adPosX = vehicle.ad.pullDownList.posX
@@ -974,6 +989,7 @@ function AutoDriveHud:handlePullDownList(vehicle)
 	while i <= vehicle.ad.pullDownList.bottomItem do
 		local text = vehicle.ad.pullDownList.itemList[i].displayName;
 		if vehicle.ad.pullDownList.hoveredItem ~= nil and i == vehicle.ad.pullDownList.hoveredItem then			
+			setTextColor(1,1,0,1);
 			setTextColor(0,0,1,1);
 		else
 			setTextColor(1,1,1,1);
@@ -1061,4 +1077,5 @@ function AutoDriveHud:createPullDownList(vehicle, start, destination, fillType)
 	else
 		self.Background.pullDownBG.ov = Overlay:new(AutoDrive.directory .. "textures/Background.dds", self.Background.pullDownBG.posX, self.Background.pullDownBG.posY , self.Background.pullDownBG.width, self.Background.pullDownBG.height + self.buttonHeight*0.5);
 	end;
+end;
 end;

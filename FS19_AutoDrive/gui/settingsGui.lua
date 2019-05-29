@@ -130,6 +130,46 @@ function adSettingsGui:onCreateAutoDriveSettingFindDriver(element)
     self:onCreateAutoDriveSetting(element, "findDriver");
 end;
 
+function adSettingsGui:onCreateAutoDriveSettingExitField(element)
+    self:onCreateAutoDriveSetting(element, "exitField");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingGUIScale(element)
+    self:onCreateAutoDriveSetting(element, "guiScale");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingShowHelp(element)
+    self:onCreateAutoDriveSetting(element, "showHelp");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingDriverWages(element)
+    self:onCreateAutoDriveSetting(element, "driverWages");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingContinueOnEmptySilo(element)
+    self:onCreateAutoDriveSetting(element, "continueOnEmptySilo");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingAutoConnectStart(element)
+    self:onCreateAutoDriveSetting(element, "autoConnectStart");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingAutoConnectEnd(element)
+    self:onCreateAutoDriveSetting(element, "autoConnectEnd");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingUnloadFillLevel(element)
+    self:onCreateAutoDriveSetting(element, "unloadFillLevel");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingParkInField(element)
+    self:onCreateAutoDriveSetting(element, "parkInField");
+end;
+
+function adSettingsGui:onCreateAutoDriveSettingFindDriver(element)
+    self:onCreateAutoDriveSetting(element, "findDriver");
+end;
+
 function adSettingsGui:onCreateAutoDriveSettingGUIScale(element)
     self:onCreateAutoDriveSetting(element, "guiScale");
 end;

@@ -226,7 +226,7 @@ end;
 
 function AutoDrive:defineMinDistanceByVehicleType(vehicle)
     local min_distance = 1.8;
-    if vehicle.typeDesc == "combine" or  vehicle.typeDesc == "harvester" or vehicle.typeName == "combineDrivable" then
+    if vehicle.typeDesc == "combine" or  vehicle.typeDesc == "harvester" or vehicle.typeName == "combineDrivable" or vehicle.typeName == "selfPropelledMower" or vehicle.typeName == "woodHarvester" or vehicle.typeName == "combineCutterFruitPreparer" or vehicle.typeName == "drivableMixerWagon" or vehicle.typeName == "cottonHarvester" then
         min_distance = 6;
     end;
     if vehicle.typeDesc == "telehandler" then
@@ -396,6 +396,12 @@ function AutoDrive:driveToNextWayPoint(vehicle, dt)
         vehicle.ad.lastUsedSpeed = finalSpeed;
     end;
 
+    if vehicle.ad.wayPoints[vehicle.ad.currentWayPoint+5] ~= nil then --allow hard braking when getting close to destination
+        if finalSpeed > vehicle.ad.lastUsedSpeed then
+            finalSpeed = math.min(vehicle.ad.lastUsedSpeed + (dt/1000)*5, finalSpeed);
+        elseif finalSpeed < vehicle.ad.lastUsedSpeed then
+            finalSpeed = math.max(vehicle.ad.lastUsedSpeed - (dt/1000)*10, finalSpeed);
+        end;
     if finalSpeed > vehicle.ad.lastUsedSpeed then
         finalSpeed = math.min(vehicle.ad.lastUsedSpeed + (dt/1000)*5, finalSpeed);
     elseif finalSpeed < vehicle.ad.lastUsedSpeed then

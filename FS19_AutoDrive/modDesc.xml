@@ -26,13 +26,20 @@ Créer, ajouter, modifier, supprimer vos routes ou points de destination à l'ai
 <![CDATA[Este mod se utiliza para crear una red de rutas y permitir que los vehículos conduzcan de forma autónoma. Una vez configurado, puede ordenar a un tractor, cercano a la red, que conduzca a cualquier meta definida, como la tienda, el campo 1 o un punto de venta.
 ]]>
  	  </es>
+	  	<ru>
+<![CDATA[Этот мод может быть использован для создания сети маршрутов для транспортных средств для автономного вождения. После настройки вы можете указать трактору, стоящему где-угодно рядом с сетью, проехать в любую точку, например, в магазин, поле №1 или в точку продажи.
+]]>
+		</ru>
 	</description>
+	<version>1.0.2.4</version>
 	<version>1.0.2.2</version>
 	<multiplayer supported="true"/>
 	<iconFilename>store.dds</iconFilename>
     <extraSourceFiles>
         <sourceFile filename="register.lua" />
     </extraSourceFiles>
+	
+	<l10n filenamePrefix="translations/translation" />
 
 	<l10n>
 		<text name="UNKNOWN">
