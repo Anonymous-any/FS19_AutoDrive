@@ -131,6 +131,7 @@ function AutoDrivePathFinder:startPathPlanningToStartPosition(driver, combine)
     driver.ad.pf.appendWayPoints[2] = targetPoint;
     driver.ad.pf.appendWayPointCount = 2;
     
+
     driver.ad.pf.goingToCombine = false;
 end;
 

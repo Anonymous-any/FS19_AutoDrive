@@ -851,6 +851,7 @@ function AutoDriveHud:mouseEvent(vehicle, posX, posY, isDown, isUp, button)
 	end;
 
 	AutoDrive.mouseWheelActive = mouseWheelActive or self.PullDownMouseWheelActive;
+	AutoDrive.mouseWheelActive = mouseWheelActive;
 end;
 
 function AutoDriveHud:startMovingHud(mouseX, mouseY)
@@ -918,6 +919,9 @@ function AutoDriveHud:handleMouseEventForPullDownList(vehicle, posX, posY, isDow
 		self.PullDownMouseWheelActive = true;
 	end;
 
+
+	local adPosX = vehicle.ad.pullDownList.posX
+	local adPosY = vehicle.ad.pullDownList.posY;
 	if vehicle.ad.pullDownList.downwards == false then
 		adPosY = adPosY + vehicle.ad.pullDownList.height;
 	end;
@@ -986,6 +990,7 @@ function AutoDriveHud:handlePullDownList(vehicle)
 		local text = vehicle.ad.pullDownList.itemList[i].displayName;
 		if vehicle.ad.pullDownList.hoveredItem ~= nil and i == vehicle.ad.pullDownList.hoveredItem then			
 			setTextColor(1,1,0,1);
+			setTextColor(0,0,1,1);
 		else
 			setTextColor(1,1,1,1);
 		end;
@@ -1072,4 +1077,5 @@ function AutoDriveHud:createPullDownList(vehicle, start, destination, fillType)
 	else
 		self.Background.pullDownBG.ov = Overlay:new(AutoDrive.directory .. "textures/Background.dds", self.Background.pullDownBG.posX, self.Background.pullDownBG.posY , self.Background.pullDownBG.width, self.Background.pullDownBG.height + self.buttonHeight*0.5);
 	end;
+end;
 end;

@@ -78,6 +78,7 @@ function AutoDrive:callDriverToCombine(combine)
                     closestDriver.ad.isLoading = false;
                     closestDriver.ad.initialized = false 
                     closestDriver.ad.wayPoints = {};        
+                    closestDriver.ad.wayPoints = {};
                     
                     combine.ad.tryingToCallDriver = false; 
                     combine.ad.driverOnTheWay = true;
@@ -221,6 +222,15 @@ end;
 
 function AutoDrive:handlePathPlanning(vehicle)
     AutoDrivePathFinder:updatePathPlanning(vehicle);
+
+    if AutoDrivePathFinder:isPathPlanningFinished(vehicle) then
+        vehicle.ad.wayPoints = vehicle.ad.pf.wayPoints;
+        vehicle.ad.currentWayPoint = 1;
+        return true
+    end;
+    return false;
+end;
+
 
     if AutoDrivePathFinder:isPathPlanningFinished(vehicle) then
         vehicle.ad.wayPoints = vehicle.ad.pf.wayPoints;

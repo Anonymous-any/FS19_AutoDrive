@@ -9,6 +9,16 @@ AutoDrive.actions   = { {'ADToggleMouse', true, 1}, {'ADToggleHud', true, 1}, {'
 						{'ADDebugDeleteWayPoint', false, 0},  {'ADDebugForceUpdate', false, 0}, {'ADDebugDeleteDestination', false, 3},  {'ADSilomode',false, 0}, {'ADOpenGUI', true, 2},
 						{'ADCallDriver', false, 3}, {'ADSelectNextFillType', false, 0}, {'ADSelectPreviousFillType', false, 0}, {'ADRecord', false, 0}, 
 						{'AD_export_routes', false, 0}, {'AD_import_routes', false, 0}, {'AD_upload_routes', false, 0}, {'ADGoToVehicle', false, 3} }
+AutoDrive.Version = "1.0.2.2";
+AutoDrive.config_changed = false;
+
+AutoDrive.directory = g_currentModDirectory;
+AutoDrive.actions   = { {'ADToggleMouse', true}, {'ADToggleHud', true}, {'ADEnDisable', true}, {'ADSelectTarget', false}, {'ADSelectPreviousTarget', false},
+						{'ADSelectTargetUnload', false},	{'ADSelectPreviousTargetUnload', false}, {'ADActivateDebug', false}, {'ADDebugShowClosest', false},
+						{'ADDebugSelectNeighbor', false}, {'ADDebugChangeNeighbor', false}, {'ADDebugCreateConnection', false}, {'ADDebugCreateMapMarker', false},
+						{'ADDebugDeleteWayPoint', false},  {'ADDebugForceUpdate', false}, {'ADDebugDeleteDestination', false},  {'ADSilomode',false}, {'ADOpenGUI', false},
+						{'ADCallDriver', false}, {'ADSelectNextFillType', false}, {'ADSelectPreviousFillType', false}, {'ADRecord', false}, 
+						{'AD_export_routes', false}, {'AD_import_routes', false}, {'AD_upload_routes', false}, {'ADGoToVehicle', false} }
 
 AutoDrive.drawHeight = 0.3;
 
@@ -59,6 +69,9 @@ function AutoDrive:onRegisterActionEvents(isSelected, isOnActiveVehicle)
 			if showF1Help then
 				g_inputBinding:setActionEventTextPriority(eventName, action[3])
 			end;
+		for _, action in pairs(AutoDrive.actions) do
+			__, eventName = InputBinding.registerActionEvent(g_inputBinding, action[1], self, AutoDrive.onActionCall, toggleButton ,true ,false ,true);
+			g_inputBinding:setActionEventTextVisibility(eventName, action[2]);	
 		end;
 	end
 end
